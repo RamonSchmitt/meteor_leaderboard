@@ -27,33 +27,50 @@ if (Meteor.isClient) {
     },
     'click .increment': function() {
       var selectedPlayer = Session.get('selectedPlayer');
-      PlayersList.update({ _id: selectedPlayer}, { $inc: { score: 5}});
+      Meteor.call('updateScore', selectedPlayer, 5);
     },
     'click .decrement': function() {
       var selectedPlayer = Session.get('selectedPlayer');
-      PlayersList.update({ _id: selectedPlayer}, { $inc: { score: -5}});
+      Meteor.call('updateScore', selectedPlayer, -5);
     },
     'click .remove': function() {
       var selectedPlayer = Session.get('selectedPlayer');
-      PlayersList.remove({ _id: selectedPlayer })
+      Meteor.call('removePlayer', selectedPlayer);
     }
   });
 
   Template.addPlayerForm.events({
     'submit form': function(event) {
       event.preventDefault();
-      var currentUserId = Meteor.userId();
       var playerNameVar = event.target.playerName.value;
-      PlayersList.insert({
-        name: playerNameVar,
-        score: 0,
-        createdBy: currentUserId
-      });
+      Meteor.call('createPlayer', playerNameVar);
       event.target.playerName.value = "";
     }
   });
 
+  Meteor.subscribe('thePlayers');
+
 }
 
-if (Meteor.isServer) {
-}
+Meteor.methods({
+  'createPlayer': function(playerNameVar) {
+    check(playerNameVar, String);
+    var currentUserId = Meteor.userId();
+    PlayersList.insert({
+      name: playerNameVar,
+      score: 0,
+      createdBy: currentUserId
+    });
+    console.log("You've called a method");
+  },
+  'removePlayer': function(selectedPlayer) {
+    check(selectedPlayer, String);
+    var currentUserId = Meteor.userId();
+    if (currentUserId) {
+      PlayerList.remove({ _id: selectedPlayer, createdBy: currentUserId });
+    }
+  },
+  'updateScore': function(selectedPlayer, scoreValue) {
+    PlayersList.update({ _id: selectedPlayer}, { $inc: { score: scoreValue}});
+  }
+});
